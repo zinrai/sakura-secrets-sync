@@ -3,7 +3,7 @@ module github.com/zinrai/sakura-secrets-sync
 go 1.25.5
 
 require (
-	github.com/sacloud/saclient-go v0.4.0
+	github.com/sacloud/saclient-go v0.4.1
 	github.com/sacloud/secretmanager-api-go v0.4.1
 )
 
