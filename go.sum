@@ -56,8 +56,8 @@ github.com/sacloud/packages-go v0.1.0 h1:rixWcvkVUI4kX6UYTFJbQgZIoBoNhN48MivHIu3
 github.com/sacloud/packages-go v0.1.0/go.mod h1:ntmPnjF8+mGWNtxgBmO0CrLphUlmRkpy+DztjlECp8M=
 github.com/sacloud/saclient-go v0.4.1 h1:VwGUwb8w7dyiCP57fkViGTTuelsMde7v3tKe2Wg1sF0=
 github.com/sacloud/saclient-go v0.4.1/go.mod h1:T2tdgcwXvB6z4TXDyM1rm4Kv/LsFMEaGOBPsdqyC1XE=
-github.com/sacloud/secretmanager-api-go v0.4.1 h1:uvQExqhbsdRmp5oTk9BNg9Vu2rzM2OaexFuEOKU9oJQ=
-github.com/sacloud/secretmanager-api-go v0.4.1/go.mod h1:9ONYBiZmRoG42N6ka6iwy5zRtjwHbH4bl9P6zL4Ei5A=
+github.com/sacloud/secretmanager-api-go v0.4.2 h1:AqNWkTIwaEOGn1ewm+Rs1iIVtBSBKOVK7U8ZhMG/k10=
+github.com/sacloud/secretmanager-api-go v0.4.2/go.mod h1:ERWg7bNcM62li3G6ZdG7e/3sJBp/RUuqFNZudBPpYC0=
 github.com/segmentio/asm v1.2.0 h1:9BQrFxC+YOHJlTlHGkTrFWf59nbL3XnCoFLTwDCI7ys=
 github.com/segmentio/asm v1.2.0/go.mod h1:BqMnlJP91P8d+4ibuonYZw9mfnzI9HfxselHZr5aAcs=
 github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=

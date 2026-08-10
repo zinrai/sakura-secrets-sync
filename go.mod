@@ -4,7 +4,7 @@ go 1.25.5
 
 require (
 	github.com/sacloud/saclient-go v0.4.1
-	github.com/sacloud/secretmanager-api-go v0.4.1
+	github.com/sacloud/secretmanager-api-go v0.4.2
 )
 
 require (
