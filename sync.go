@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	secretmanager "github.com/sacloud/secretmanager-api-go"
+	secretmanager "github.com/sacloud/sacloud-sdk-go/api/secretmanager"
 )
 
 func run(dir, filesPath string, all bool, zone, decryptCmd string) error {
