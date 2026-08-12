@@ -55,6 +55,13 @@ func PutSecret(op secretmanager.SecretAPI, name, value string) error {
 	return err
 }
 
+// DeleteSecret removes a secret from the Vault
+func DeleteSecret(op secretmanager.SecretAPI, name string) error {
+	return op.Delete(context.Background(), v1.DeleteSecret{
+		Name: name,
+	})
+}
+
 // GetSecret retrieves the latest value of a secret using the unveil API
 func GetSecret(op secretmanager.SecretAPI, name string) (string, error) {
 	res, err := op.Unveil(context.Background(), v1.Unveil{

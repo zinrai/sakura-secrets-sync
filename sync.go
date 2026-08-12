@@ -11,7 +11,7 @@ import (
 	secretmanager "github.com/sacloud/sacloud-sdk-go/api/secretmanager"
 )
 
-func run(dir, filesPath string, all bool, zone, decryptCmd string) error {
+func run(dir, zone, decryptCmd string, dryRun bool) error {
 	dir = strings.TrimSuffix(dir, "/")
 	info, err := os.Stat(dir)
 	if err != nil {
@@ -21,12 +21,16 @@ func run(dir, filesPath string, all bool, zone, decryptCmd string) error {
 		return fmt.Errorf("not a directory: %s", dir)
 	}
 
-	files, err := collectFiles(dir, filesPath, all)
+	files, err := walkFiles(dir)
 	if err != nil {
 		return err
 	}
+	fmt.Fprintf(os.Stderr, "walked %d file(s) under %s\n", len(files), dir)
+
+	// An empty directory would mean deleting every secret in the vault.
+	// That is never a sync, so refuse instead of mirroring emptiness.
 	if len(files) == 0 {
-		return nil
+		return fmt.Errorf("no files under %s, refusing to sync", dir)
 	}
 
 	vaultID := os.Getenv("SAKURA_SECRETS_ID")
@@ -48,41 +52,25 @@ func run(dir, filesPath string, all bool, zone, decryptCmd string) error {
 	for _, f := range files {
 		name := PathToName(dir, f)
 		synced[name] = true
-		if err := syncFile(op, decryptCmd, f, name, existing[name]); err != nil {
+		if err := syncFile(op, decryptCmd, f, name, existing[name], dryRun); err != nil {
 			return err
 		}
 	}
 
-	if all {
-		reportOrphans(existing, synced, dir)
+	if err := deleteOrphans(op, existing, synced, dryRun); err != nil {
+		return err
+	}
+
+	if dryRun {
+		fmt.Fprintln(os.Stderr, "dry-run: no changes applied")
 	}
 
 	return nil
 }
 
-// collectFiles determines the sync candidates, either every file under dir
-// or the paths listed in filesPath.
-func collectFiles(dir, filesPath string, all bool) ([]string, error) {
-	if all {
-		files, err := walkFiles(dir)
-		if err != nil {
-			return nil, err
-		}
-		fmt.Fprintf(os.Stderr, "walked %d file(s) under %s\n", len(files), dir)
-		return files, nil
-	}
-
-	files, err := loadCandidates(filesPath, dir)
-	if err != nil {
-		return nil, err
-	}
-	fmt.Fprintf(os.Stderr, "loaded %d candidate(s) from %s\n", len(files), filesPath)
-	return files, nil
-}
-
 // syncFile decrypts one file and writes it to the store only when needed:
 // create when the secret does not exist, update when the value differs.
-func syncFile(op secretmanager.SecretAPI, decryptCmd, path, name string, exists bool) error {
+func syncFile(op secretmanager.SecretAPI, decryptCmd, path, name string, exists bool, dryRun bool) error {
 	value, err := Decrypt(decryptCmd, path)
 	if err != nil {
 		return err
@@ -93,8 +81,10 @@ func syncFile(op secretmanager.SecretAPI, decryptCmd, path, name string, exists 
 	}
 
 	if !exists {
-		if err := PutSecret(op, name, value); err != nil {
-			return err
+		if !dryRun {
+			if err := PutSecret(op, name, value); err != nil {
+				return err
+			}
 		}
 		fmt.Fprintf(os.Stderr, "[create] %s -> %s\n", path, name)
 		return nil
@@ -109,26 +99,37 @@ func syncFile(op secretmanager.SecretAPI, decryptCmd, path, name string, exists 
 		return nil
 	}
 
-	if err := PutSecret(op, name, value); err != nil {
-		return err
+	if !dryRun {
+		if err := PutSecret(op, name, value); err != nil {
+			return err
+		}
 	}
 	fmt.Fprintf(os.Stderr, "[update] %s -> %s\n", path, name)
 	return nil
 }
 
-// reportOrphans lists store entries that no synced file corresponds to.
-// They are only reported, never deleted.
-func reportOrphans(existing, synced map[string]bool, dir string) {
+// deleteOrphans removes store entries that no file corresponds to,
+// so the vault mirrors the directory.
+func deleteOrphans(op secretmanager.SecretAPI, existing, synced map[string]bool, dryRun bool) error {
 	names := make([]string, 0, len(existing))
 	for name := range existing {
 		names = append(names, name)
 	}
 	sort.Strings(names)
+
 	for _, name := range names {
-		if !synced[name] {
-			fmt.Fprintf(os.Stderr, "[orphan] %s has no file under %s, delete manually\n", name, dir)
+		if synced[name] {
+			continue
 		}
+		if !dryRun {
+			if err := DeleteSecret(op, name); err != nil {
+				return err
+			}
+		}
+		fmt.Fprintf(os.Stderr, "[delete] %s\n", name)
 	}
+
+	return nil
 }
 
 func walkFiles(dir string) ([]string, error) {
@@ -145,27 +146,6 @@ func walkFiles(dir string) ([]string, error) {
 	})
 	if err != nil {
 		return nil, err
-	}
-	sort.Strings(files)
-	return files, nil
-}
-
-func loadCandidates(path, dir string) ([]string, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read candidates: %w", err)
-	}
-
-	var files []string
-	for _, line := range strings.Split(string(data), "\n") {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-		if !strings.HasPrefix(line, dir+"/") {
-			return nil, fmt.Errorf("candidate not under %s: %s", dir, line)
-		}
-		files = append(files, line)
 	}
 	sort.Strings(files)
 	return files, nil
