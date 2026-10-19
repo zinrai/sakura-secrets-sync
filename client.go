@@ -10,10 +10,10 @@ import (
 	"github.com/sacloud/sacloud-sdk-go/common/saclient"
 )
 
-// NewSecretOp creates a Secret Manager API client bound to the specified Vault.
+// NewClient creates a Secret Manager API client for the specified zone.
 // Credentials are resolved by saclient-go from environment variables,
 // supporting both static API keys and service principals.
-func NewSecretOp(zone, vaultID string) (secretmanager.SecretAPI, error) {
+func NewClient(zone string) (*v1.Client, error) {
 	endpoint := fmt.Sprintf("SAKURA_ENDPOINTS_SECRETMANAGER=https://secure.sakura.ad.jp/cloud/zone/%s/api/cloud/1.1", zone)
 
 	var sc saclient.Client
@@ -29,18 +29,25 @@ func NewSecretOp(zone, vaultID string) (secretmanager.SecretAPI, error) {
 		return nil, fmt.Errorf("failed to create Secret Manager client: %w", err)
 	}
 
-	return secretmanager.NewSecretOp(client, vaultID), nil
+	return client, nil
 }
 
 // ListNames returns the names of all secrets in the Vault
-func ListNames(op secretmanager.SecretAPI) (map[string]bool, error) {
-	secrets, err := op.List(context.Background())
+func ListNames(client *v1.Client, vaultID string) (map[string]bool, error) {
+	res, err := client.ListVaultSecrets(context.Background(), v1.ListVaultSecretsParams{
+		VaultResourceID: vaultID,
+	})
 	if err != nil {
 		return nil, err
 	}
+	// Not paged with Count and From: their defaults and semantics are
+	// undocumented, so a partial list is refused rather than guessed past.
+	if len(res.Secrets) != res.Total {
+		return nil, fmt.Errorf("listed %d of %d secrets, refusing to sync", len(res.Secrets), res.Total)
+	}
 
-	names := make(map[string]bool, len(secrets))
-	for _, s := range secrets {
+	names := make(map[string]bool, len(res.Secrets))
+	for _, s := range res.Secrets {
 		names[s.Name] = true
 	}
 	return names, nil
@@ -48,7 +55,7 @@ func ListNames(op secretmanager.SecretAPI) (map[string]bool, error) {
 
 // PutSecret registers a secret value to the Vault
 func PutSecret(op secretmanager.SecretAPI, name, value string) error {
-	_, err := op.Create(context.Background(), v1.CreateSecret{
+	_, err := op.Create(context.Background(), secretmanager.CreateSecretParams{
 		Name:  name,
 		Value: value,
 	})
@@ -57,14 +64,12 @@ func PutSecret(op secretmanager.SecretAPI, name, value string) error {
 
 // DeleteSecret removes a secret from the Vault
 func DeleteSecret(op secretmanager.SecretAPI, name string) error {
-	return op.Delete(context.Background(), v1.DeleteSecret{
-		Name: name,
-	})
+	return op.Delete(context.Background(), name)
 }
 
 // GetSecret retrieves the latest value of a secret using the unveil API
 func GetSecret(op secretmanager.SecretAPI, name string) (string, error) {
-	res, err := op.Unveil(context.Background(), v1.Unveil{
+	res, err := op.Unveil(context.Background(), secretmanager.UnveilParams{
 		Name: name,
 	})
 	if err != nil {

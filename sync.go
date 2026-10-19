@@ -38,12 +38,13 @@ func run(dir, zone, decryptCmd string, dryRun bool) error {
 		return fmt.Errorf("required environment variable not set: SAKURA_SECRETS_ID")
 	}
 
-	op, err := NewSecretOp(zone, vaultID)
+	client, err := NewClient(zone)
 	if err != nil {
 		return err
 	}
+	op := secretmanager.NewSecretOp(client, vaultID)
 
-	existing, err := ListNames(op)
+	existing, err := ListNames(client, vaultID)
 	if err != nil {
 		return err
 	}
