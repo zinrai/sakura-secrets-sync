@@ -1,48 +1,10 @@
 # sakura-secrets-sync
 
-A command-line tool to sync a directory of sops-encrypted files to [SAKURA Cloud Secret Manager](https://cloud.sakura.ad.jp/products/secrets-manager/), one secret per file.
-
-## Features
-
-- Mirrors the directory to the vault: creates missing secrets, updates changed ones, deletes secrets that no file corresponds to
-- Decrypts each file with an external command and writes the value only when it differs from the stored value
-- Derives the secret name from the file path, so the directory structure is the routing
-- Reports every decision on stderr: `[create]`, `[update]`, `[unchanged]`, `[delete]`
-- `-dry-run` reports the same decisions without writing to the store
-- Refuses to run against an empty directory, because that would mean deleting every secret in the vault
-
-## Requirements
-
-- SAKURA Cloud account with Secret Manager access
-- Valid API credentials (static API keys or a service principal)
-- A decrypt command such as [sops](https://github.com/getsops/sops) in PATH
-
-## Configuration
-
-Set the Vault resource ID:
-
-```bash
-$ export SAKURA_SECRETS_ID="your-vault-resource-id"
-```
-
-API credentials are resolved by [sacloud-sdk-go](https://github.com/sacloud/sacloud-sdk-go). Set either static API keys:
-
-```bash
-$ export SAKURA_ACCESS_TOKEN="your-access-token"
-$ export SAKURA_ACCESS_TOKEN_SECRET="your-access-token-secret"
-```
-
-or service principal credentials:
-
-```bash
-$ export SAKURA_SERVICE_PRINCIPAL_ID="your-service-principal-id"
-$ export SAKURA_SERVICE_PRINCIPAL_KEY_ID="your-key-id"
-$ export SAKURA_PRIVATE_KEY_PATH="/path/to/private-key.pem"
-```
+A command-line tool to sync a directory of encrypted files to [SAKURA Cloud Secret Manager](https://cloud.sakura.ad.jp/products/secrets-manager/), one secret per file. Each file is decrypted by an external command, [sops](https://github.com/getsops/sops) by default.
 
 ## Usage
 
-Sync a directory to the vault:
+Sync a directory to the vault, with the vault and credentials set as described in [Configuration](#configuration):
 
 ```bash
 $ sakura-secrets-sync -dir staging
@@ -76,9 +38,40 @@ For each file under `-dir`:
 3. If the secret does not exist it is created
 4. If it exists, the stored value is fetched and the secret is written only when the values differ
 
-Secrets in the vault that no file corresponds to are then deleted, so the vault mirrors the directory.
+Secrets in the vault that no file corresponds to are then deleted, so the vault mirrors the directory. Each decision is reported on stderr as `[create]`, `[update]`, `[unchanged]` or `[delete]`.
+
+An empty directory is refused, because mirroring it would delete every secret in the vault.
 
 The secret name is the file path relative to `-dir`, as-is. `staging/config/database.yaml` becomes `config/database.yaml`. Secret Manager accepts `/` in names (verified against the API, the manual does not document name constraints), so the repository layout carries over unmangled.
+
+## Configuration
+
+Set the Vault resource ID:
+
+```bash
+$ export SAKURA_SECRETS_ID="your-vault-resource-id"
+```
+
+API credentials are resolved by [sacloud-sdk-go](https://github.com/sacloud/sacloud-sdk-go). Set either static API keys:
+
+```bash
+$ export SAKURA_ACCESS_TOKEN="your-access-token"
+$ export SAKURA_ACCESS_TOKEN_SECRET="your-access-token-secret"
+```
+
+or service principal credentials:
+
+```bash
+$ export SAKURA_SERVICE_PRINCIPAL_ID="your-service-principal-id"
+$ export SAKURA_SERVICE_PRINCIPAL_KEY_ID="your-key-id"
+$ export SAKURA_PRIVATE_KEY_PATH="/path/to/private-key.pem"
+```
+
+## Requires
+
+- SAKURA Cloud account with Secret Manager access
+- API credentials (static API keys or a service principal)
+- The decrypt command in PATH, [sops](https://github.com/getsops/sops) by default
 
 ## Exit Codes
 
