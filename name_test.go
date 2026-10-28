@@ -12,10 +12,17 @@ func TestPathToName(t *testing.T) {
 		{"staging", "staging/ssh_keys/id_ed25519", "ssh_keys/id_ed25519"},
 		{"staging", "staging/app.env", "app.env"},
 		{"production", "production/a/b/c.json", "a/b/c.json"},
+		{"./staging", "staging/app.env", "app.env"},
+		{"staging/", "staging/app.env", "app.env"},
+		{"staging//", "staging/app.env", "app.env"},
 	}
 
 	for _, tt := range tests {
-		got := PathToName(tt.dir, tt.path)
+		got, err := PathToName(tt.dir, tt.path)
+		if err != nil {
+			t.Errorf("PathToName(%q, %q) error: %v", tt.dir, tt.path, err)
+			continue
+		}
 		if got != tt.want {
 			t.Errorf("PathToName(%q, %q) = %q, want %q", tt.dir, tt.path, got, tt.want)
 		}

@@ -6,13 +6,11 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 
 	secretmanager "github.com/sacloud/sacloud-sdk-go/api/secretmanager"
 )
 
 func run(dir, zone, decryptCmd string, dryRun bool) error {
-	dir = strings.TrimSuffix(dir, "/")
 	info, err := os.Stat(dir)
 	if err != nil {
 		return err
@@ -51,7 +49,10 @@ func run(dir, zone, decryptCmd string, dryRun bool) error {
 
 	synced := make(map[string]bool)
 	for _, f := range files {
-		name := PathToName(dir, f)
+		name, err := PathToName(dir, f)
+		if err != nil {
+			return err
+		}
 		synced[name] = true
 		if err := syncFile(op, decryptCmd, f, name, existing[name], dryRun); err != nil {
 			return err

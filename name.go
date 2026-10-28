@@ -1,12 +1,15 @@
 package main
 
-import "strings"
+import (
+	"path/filepath"
+	"strings"
+)
 
 // PathToName derives the secret name from a file path under dir.
 // The path relative to dir is the name as-is. Secret Manager accepts '/'
 // in names, so the repository layout carries over unmangled.
-func PathToName(dir, path string) string {
-	return strings.TrimPrefix(path, dir+"/")
+func PathToName(dir, path string) (string, error) {
+	return filepath.Rel(dir, path)
 }
 
 // Normalize strips trailing newlines from a decrypted value. The store
