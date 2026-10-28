@@ -81,10 +81,8 @@ func syncFile(op secretmanager.SecretAPI, decryptCmd, path, name string, exists 
 	}
 
 	if !exists {
-		if !dryRun {
-			if err := PutSecret(op, name, value); err != nil {
-				return err
-			}
+		if err := putUnlessDryRun(op, name, value, dryRun); err != nil {
+			return err
 		}
 		fmt.Fprintf(os.Stderr, "[create] %s -> %s\n", path, name)
 		return nil
@@ -99,10 +97,8 @@ func syncFile(op secretmanager.SecretAPI, decryptCmd, path, name string, exists 
 		return nil
 	}
 
-	if !dryRun {
-		if err := PutSecret(op, name, value); err != nil {
-			return err
-		}
+	if err := putUnlessDryRun(op, name, value, dryRun); err != nil {
+		return err
 	}
 	fmt.Fprintf(os.Stderr, "[update] %s -> %s\n", path, name)
 	return nil
@@ -119,15 +115,27 @@ func deleteOrphans(op secretmanager.SecretAPI, existing, synced map[string]bool,
 		if synced[name] {
 			continue
 		}
-		if !dryRun {
-			if err := DeleteSecret(op, name); err != nil {
-				return err
-			}
+		if err := deleteUnlessDryRun(op, name, dryRun); err != nil {
+			return err
 		}
 		fmt.Fprintf(os.Stderr, "[delete] %s\n", name)
 	}
 
 	return nil
+}
+
+func putUnlessDryRun(op secretmanager.SecretAPI, name, value string, dryRun bool) error {
+	if dryRun {
+		return nil
+	}
+	return PutSecret(op, name, value)
+}
+
+func deleteUnlessDryRun(op secretmanager.SecretAPI, name string, dryRun bool) error {
+	if dryRun {
+		return nil
+	}
+	return DeleteSecret(op, name)
 }
 
 func walkFiles(dir string) ([]string, error) {
