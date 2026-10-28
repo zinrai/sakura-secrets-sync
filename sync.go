@@ -70,8 +70,6 @@ func run(dir, zone, decryptCmd string, dryRun bool) error {
 	return nil
 }
 
-// syncFile decrypts one file and writes it to the store only when needed:
-// create when the secret does not exist, update when the value differs.
 func syncFile(op secretmanager.SecretAPI, decryptCmd, path, name string, exists bool, dryRun bool) error {
 	value, err := Decrypt(decryptCmd, path)
 	if err != nil {
@@ -110,8 +108,6 @@ func syncFile(op secretmanager.SecretAPI, decryptCmd, path, name string, exists 
 	return nil
 }
 
-// deleteOrphans removes store entries that no file corresponds to,
-// so the vault mirrors the directory.
 func deleteOrphans(op secretmanager.SecretAPI, existing, synced map[string]bool, dryRun bool) error {
 	names := make([]string, 0, len(existing))
 	for name := range existing {

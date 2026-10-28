@@ -10,9 +10,6 @@ import (
 	"github.com/sacloud/sacloud-sdk-go/common/saclient"
 )
 
-// NewClient creates a Secret Manager API client for the specified zone.
-// Credentials are resolved by saclient-go from environment variables,
-// supporting both static API keys and service principals.
 func NewClient(zone string) (*v1.Client, error) {
 	endpoint := fmt.Sprintf("SAKURA_ENDPOINTS_SECRETMANAGER=https://secure.sakura.ad.jp/cloud/zone/%s/api/cloud/1.1", zone)
 
@@ -32,7 +29,6 @@ func NewClient(zone string) (*v1.Client, error) {
 	return client, nil
 }
 
-// ListNames returns the names of all secrets in the Vault
 func ListNames(client *v1.Client, vaultID string) (map[string]bool, error) {
 	res, err := client.ListVaultSecrets(context.Background(), v1.ListVaultSecretsParams{
 		VaultResourceID: vaultID,
@@ -53,7 +49,6 @@ func ListNames(client *v1.Client, vaultID string) (map[string]bool, error) {
 	return names, nil
 }
 
-// PutSecret registers a secret value to the Vault
 func PutSecret(op secretmanager.SecretAPI, name, value string) error {
 	_, err := op.Create(context.Background(), secretmanager.CreateSecretParams{
 		Name:  name,
@@ -62,12 +57,10 @@ func PutSecret(op secretmanager.SecretAPI, name, value string) error {
 	return err
 }
 
-// DeleteSecret removes a secret from the Vault
 func DeleteSecret(op secretmanager.SecretAPI, name string) error {
 	return op.Delete(context.Background(), name)
 }
 
-// GetSecret retrieves the latest value of a secret using the unveil API
 func GetSecret(op secretmanager.SecretAPI, name string) (string, error) {
 	res, err := op.Unveil(context.Background(), secretmanager.UnveilParams{
 		Name: name,

@@ -7,8 +7,6 @@ import (
 	"strings"
 )
 
-// Decrypt runs the decrypt command with the file path appended as the last
-// argument and returns its stdout.
 func Decrypt(cmdline, path string) (string, error) {
 	parts := strings.Fields(cmdline)
 	if len(parts) == 0 {

@@ -5,15 +5,14 @@ import (
 	"strings"
 )
 
-// PathToName derives the secret name from a file path under dir.
-// The path relative to dir is the name as-is. Secret Manager accepts '/'
-// in names, so the repository layout carries over unmangled.
 func PathToName(dir, path string) (string, error) {
+	// Not mangled: Secret Manager accepts '/' in names, so escaping it
+	// would only make the name differ from the path it came from.
 	return filepath.Rel(dir, path)
 }
 
-// Normalize strips trailing newlines from a decrypted value. The store
-// removes them on write, so keeping them would make every comparison differ.
 func Normalize(value string) string {
+	// Not kept as decrypted: the store strips trailing newlines on write,
+	// so every comparison would differ and every run would update.
 	return strings.TrimRight(value, "\n")
 }
